@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8" />
+	<title>奥野アイコンメーカー</title>
+	<link type="text/css" href="./css/ui-lightness/jquery-ui-1.8.12.custom.css" rel="stylesheet" />
+	<script type="text/javascript" src="./js/oqunomaker.js"></script>
+	<script type="text/javascript" src="js/jquery-1.5.1.min.js"></script>
+	<script type="text/javascript" src="js/jquery-ui-1.8.12.custom.min.js"></script>
+
+	<script type="text/javascript" src="./farbtastic/farbtastic.js"></script>
+	<link rel="stylesheet" href="./farbtastic/farbtastic.css" type="text/css" />
+
+	<script type="text/javascript">
+function generateTest(dataURL) {
+	window.open(dataURL);
+}
+	</script>
+
+	<style type="text/css">
+#maker-box .ui-slider {
+	margin-top: 8px;
+}
+
+.oqunomaker-col2 {
+	vertical-align: bottom;
+	text-align: center;
+	padding-left: 10px;
+}
+
+.oqunomaker-effect-sel {
+	font-size: 90%;
+	margin-bottom: 9px;
+}
+
+.farbtastic {
+	margin-left: 1em;
+	margin-right: 1em;
+}
+	</style>
+</head>
+<body onload="void gyuque.launch_oqunomaker('maker-box', generateTest)">
+	<div id="maker-box" style="width: 600px"></div>
+	<p>Version 0.2 <a href="./oqunomaker-0.2.zip">Download Package</a></p>
+</body>
+</html>
