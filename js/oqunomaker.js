@@ -17,7 +17,9 @@ if (!window.gyuque) { window.gyuque ={}; }
 		}
 	};
 
-	pkg.OqunoMaker = function(containerElement, size, onComplete) {
+	pkg.OqunoMaker = function(containerElement, size, onComplete, plugin_faces) {
+		this.pluginFaces = plugin_faces;
+
 		this.onComplete = onComplete;
 		this.centroid = {x: 0, y: 0, height: 0};
 		this.canvasSize = size;
@@ -37,7 +39,8 @@ if (!window.gyuque) { window.gyuque ={}; }
 			rip_scale: 1.0,
 			bodyColor: '#56a485',
 			highlight: false,
-			glassy: false
+			glassy: false,
+			faceType: '奥野'
 		};
 
 		var i;
@@ -61,9 +64,23 @@ if (!window.gyuque) { window.gyuque ={}; }
 		this.board.fit();
 
 		this.resetParams();
+		for (var fname in this.pluginFaces) { this.initPluginFace(this.pluginFaces[fname]); }
 	};
 
 	pkg.OqunoMaker.prototype = {
+		initPluginFace: function(f) {
+			var _this = this;
+			var u = function(){ _this.update(); };
+
+			f.imgEye = new Image();
+			f.imgEye.onload = u;
+			f.imgEye.src = f.eye;
+
+			f.imgMouth = new Image();
+			f.imgMouth.onload = u;
+			f.imgMouth.src = f.mouth;
+		},
+
 		onSignButton: function() {
 			this.board.clear();
 			this.board.show();
@@ -116,7 +133,7 @@ if (!window.gyuque) { window.gyuque ={}; }
 			sbtn_inner.type = "image";
 			sbtn_inner.src = "images/write-icon.png";
 			sbtn_inner.title = "サインを入れる";
-			add_css(".oqunomaker-sign-button input:active{opacity:0.5;} .oqunomaker-sign-button{width:24px; height:24px; margin-left: "+(this.canvasSize-32)+"px; margin-top: -32px; background: url(images/button-shadow.png) no-repeat top left}");
+			add_css(".oqunomaker-sign-button input:active{opacity:0.5;} .oqunomaker-sign-button{width:24px; height:24px; margin-left: "+(this.canvasSize-32)+"px; margin-top: -32px; background: url(images/button-shadow.png) no-repeat top left} .oqunomaker-col2 form h3{margin: 9px 2px 2px 2px; padding: 0; font-size: 13px;}");
 			sbtn_outer.appendChild(sbtn_inner);
 			col1.appendChild(sbtn_outer);
 			$(sbtn_inner).click(function(){
@@ -187,8 +204,14 @@ if (!window.gyuque) { window.gyuque ={}; }
 			});
 			col2.appendChild(cp);
 			
+			var face_box = $H('form', 'oqunomaker-face-sel');
+			face_box.appendChild($($H('h3')).text('顔')[0]);
+			this.buildFaceSelector(face_box);
+			col2.appendChild(face_box);
+			
 
 			var effect_box = $H('form', 'oqunomaker-effect-sel');
+			effect_box.appendChild($($H('h3')).text('質感')[0]);
 			var radio_flat      = addRadio(effect_box, "平面", 'flat');
 			radio_flat.checked = true;
 			var radio_highlight = addRadio(effect_box, "光沢", 'resin');
@@ -213,8 +236,36 @@ if (!window.gyuque) { window.gyuque ={}; }
 			}
 		},
 
+		buildFaceSelector: function(box) {
+			var addRadio = function(target, labelText, val) {
+				var el = $H('input');
+				el.type = 'radio';
+				el.name = 'oqunomaker-face-type';
+				el.value = val;
+
+				var label = $H('label');
+				label.appendChild(el);
+				label.appendChild(document.createTextNode(labelText));
+				target.appendChild(label);
+				return el;
+			};
+
+			var radios = [];
+			radios.push(addRadio(box, "奥野", "奥野"));
+			for (var name in this.pluginFaces) {
+				radios.push(addRadio(box, name, name));
+			}
+
+			var _this = this;
+			radios[0].checked = true;
+			$(radios).click(function(){
+				_this.update();
+			});
+		},
+
 		resetParams: function() {
 			$('input[name=oqunomaker-fill-type]').val(['flat']);
+			$('input[name=oqunomaker-face-type]').val(['奥野']);
 			for (var i in this.all_sliders)
 				this.all_sliders[i].slider('value', 0);
 
@@ -236,6 +287,8 @@ if (!window.gyuque) { window.gyuque ={}; }
 			this.params.phase_face_2 = this.face_ph_sliders[1].slider('value') * scale;
 			this.params.face_scale = 1.0 + this.face_ph_sliders[2].slider('value') / 200.0;
 			this.params.rip_scale = 1.0 + this.rip_slider.slider('value') / 200.0;
+
+			this.params.faceType = $('input[name=oqunomaker-face-type]:checked').val();
 
 			this.shift_body[2] = this.params.phase_body_1;
 			this.shift_body[3] = this.params.phase_body_2;
@@ -401,11 +454,24 @@ if (!window.gyuque) { window.gyuque ={}; }
 		},
 
 		drawFace: function(g, center, scale, rip_scale) {
+			var pface = this.pluginFaces[this.params.faceType];
+			if (pface) {
+				return this.drawPluginFace(g, pface, center, rip_scale);
+			}
+
 			var hscale = center.height / this.params.face_base_height;
 
 			this.drawEye(g, center.x - 45*scale, center.y - 35*scale * hscale, 10 * scale);
 			this.drawEye(g, center.x + 45*scale, center.y - 35*scale * hscale, 10 * scale);
 			this.drawRip(g, center.x - 7*scale, center.y + 45*scale * hscale, 26 * scale, rip_scale);
+		},
+
+		drawPluginFace: function(g, face, center, rip_scale) {
+			var hscale = 0.7 + (center.height / this.params.face_base_height)*0.3;
+			g.drawImage(face.imgEye, center.x - face.centerX, center.y - face.centerY*hscale);
+
+			var s = rip_scale;
+			g.drawImage(face.imgMouth, center.x - face.centerX*s, center.y - face.centerY, face.imgMouth.width * s, face.imgMouth.height);
 		},
 
 		drawRip: function(g, cx, cy, size, rip_scale) {
@@ -912,7 +978,14 @@ if (!window.gyuque) { window.gyuque ={}; }
 
 	// =========================== launch ============================
 	pkg.launch_oqunomaker = function(box_id, onComplete) {
-		theApp = new pkg.OqunoMaker(document.getElementById(box_id), 256, onComplete);
+		theApp = new pkg.OqunoMaker(document.getElementById(box_id), 256, onComplete, {
+			'スガタ': {
+				eye: 'images/sugata-e.svg',
+				mouth: 'images/sugata-m.svg',
+				centerX: 50,
+				centerY: 44
+			}
+		});
 	};
 
 	// ============================ utils ============================
